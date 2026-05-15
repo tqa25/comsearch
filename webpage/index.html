@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Search Company — Pipeline Diagram</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ============================================
+    * SECTION: Language Toggle
+    * PURPOSE: Nút chuyển đổi VI/KO cố định góc phải
+    ============================================ -->
+  <div class="lang-toggle">
+    <button class="lang-btn active" data-lang="vi">🇻🇳 VI</button>
+    <button class="lang-btn" data-lang="ko">🇰🇷 KO</button>
+  </div>
+
+  <!-- ============================================
+    * SECTION: Header
+    * PURPOSE: Tiêu đề trang
+    ============================================ -->
+  <header class="app-header">
+    <div class="top-badge" data-i18n="badge">System Architecture</div>
+    <h1 data-i18n="pageTitle">Auto Search Company — Pipeline Diagram</h1>
+    <p data-i18n="subtitle">Luồng xử lý dữ liệu 5 modules tự động tìm kiếm thông tin doanh nghiệp</p>
+  </header>
+
+  <!-- ============================================
+    * SECTION: Diagram Workspace
+    * PURPOSE: Khung chứa 3D cho 5 module vertical
+    ============================================ -->
+  <main class="diagram-wrapper">
+    <div class="diagram-container" id="diagramContainer">
+      <!-- Logic in app.js sẽ inject 5 modules vào đây -->
+    </div>
+  </main>
+
+  <!-- ============================================
+    * SECTION: Detail Modal (ZOOM LEVEL 3)
+    * PURPOSE: Hiển thị chi tiết khi nhấp vào 1 node
+    ============================================ -->
+  <div class="detail-modal" id="detailModal">
+    <div class="modal-dialog">
+      <button class="close-btn" id="closeModal" aria-label="Close">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <div id="modalContent">
+        <!-- Logic in app.js sẽ inject nội dung modal vào đây -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+    * SECTION: Scripts
+    * PURPOSE: Tải dữ liệu và logic JS
+    ============================================ -->
+  <script src="data.js"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>

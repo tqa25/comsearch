@@ -263,6 +263,22 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    def get_top_filtered_links(
+        self, company_id: int, limit: int = 10
+    ) -> List[Dict]:
+        conn = _get_connection()
+        try:
+            rows = conn.execute(
+                """SELECT * FROM filtered_links
+                   WHERE company_id = ? AND should_scrape = 1
+                   ORDER BY relevance_score DESC
+                   LIMIT ?""",
+                (company_id, limit),
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
     # ── Scraped Pages ──
 
     def insert_scraped_page(
@@ -279,6 +295,16 @@ class DatabaseManager:
             )
             conn.commit()
             return cur.lastrowid
+        finally:
+            conn.close()
+
+    def get_scraped_page(self, page_id: int) -> Optional[Dict]:
+        conn = _get_connection()
+        try:
+            row = conn.execute(
+                "SELECT * FROM scraped_pages WHERE id = ?", (page_id,)
+            ).fetchone()
+            return dict(row) if row else None
         finally:
             conn.close()
 
@@ -411,15 +437,23 @@ class DatabaseManager:
     ) -> None:
         conn = _get_connection()
         try:
-            existing = self.get_daily_quota(date_str)
-            if existing.get("id"):
+            row = conn.execute(
+                "SELECT * FROM daily_quota WHERE date = ?", (date_str,)
+            ).fetchone()
+            if row:
                 updates = {}
                 if gemini_grounding_used is not None:
                     updates["gemini_grounding_used"] = gemini_grounding_used
                 if serper_used is not None:
                     updates["serper_used"] = serper_used
                 if updates:
-                    self._update_daily_quota(conn, date_str, updates)
+                    set_clause = ", ".join(f"{k} = ?" for k in updates)
+                    values = tuple(updates.values()) + (date_str,)
+                    conn.execute(
+                        f"UPDATE daily_quota SET {set_clause} WHERE date = ?",
+                        values,
+                    )
+                    conn.commit()
             else:
                 conn.execute(
                     """INSERT INTO daily_quota (date, gemini_grounding_used, serper_used)
@@ -433,13 +467,3 @@ class DatabaseManager:
                 conn.commit()
         finally:
             conn.close()
-
-    def _update_daily_quota(
-        self, conn: sqlite3.Connection, date_str: str, updates: dict
-    ) -> None:
-        set_clause = ", ".join(f"{k} = ?" for k in updates)
-        values = tuple(updates.values()) + (date_str,)
-        conn.execute(
-            f"UPDATE daily_quota SET {set_clause} WHERE date = ?", values
-        )
-        conn.commit()

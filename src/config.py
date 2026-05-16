@@ -60,9 +60,10 @@ class Config:
         )
 
         default_keyword_scores = {
-            "contact": 10,
-            "admin": 10,
-            "recruitment": 5,
+            "contact": 10, "lien-he": 10, "lienhe": 10, "contacts": 10,
+            "admin": 10, "hanh-chinh": 10, "hanchinh": 10, "administration": 10,
+            "recruitment": 5, "tuyen-dung": 5, "tuyendung": 5, "career": 5,
+            "careers": 5, "jobs": 5,
         }
         self.KEYWORD_SCORES: dict = _parse_json_dict(
             os.getenv("KEYWORD_SCORES"), default_keyword_scores

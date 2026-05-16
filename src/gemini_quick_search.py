@@ -178,10 +178,8 @@ class GeminiQuickSearch:
         self._wait_for_rate_limit()
 
         try:
-            response = self.model.generate_content(
-                prompt,
-                tools=[{"google_search": {}}],
-            )
+            # Gemma models don't support grounding tools, use plain generation
+            response = self.model.generate_content(prompt)
 
             self._increment_gemini_quota()
 

@@ -1,0 +1,662 @@
+/* ============================================
+ * SECTION: Base Styles
+ * PURPOSE: Reset, variables, typography, and layout structure
+ * ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Colors - Dark Theme */
+  --bg-main: #0d1117;
+  --bg-card: #161b22;
+  --bg-card-hover: #1e242d;
+  --border-color: #30363d;
+  --text-primary: #c9d1d9;
+  --text-secondary: #8b949e;
+  
+  /* Module Theme Colors */
+  --theme-blue: #58a6ff;
+  --theme-blue-bg: rgba(88, 166, 255, 0.1);
+  --theme-green: #3fb950;
+  --theme-green-bg: rgba(63, 185, 80, 0.1);
+  --theme-red: #f85149;
+  --theme-red-bg: rgba(248, 81, 73, 0.1);
+  --theme-purple: #bc8cff;
+  --theme-purple-bg: rgba(188, 140, 255, 0.1);
+  
+  /* Shared values */
+  --radius: 8px;
+  --font-sans: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* ============================================
+ * SECTION: Header & Lang Toggle
+ * PURPOSE: Top navigation and language selection
+ * ============================================ */
+
+.app-header {
+  text-align: center;
+  padding: 40px 20px 20px;
+  position: relative;
+  z-index: 10;
+}
+
+.top-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--theme-purple);
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.app-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.app-header p {
+  color: var(--text-secondary);
+  font-size: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.lang-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 4px;
+  z-index: 100;
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.lang-btn.active {
+  background: var(--border-color);
+  color: white;
+}
+
+/* ============================================
+ * SECTION: 3D Diagram Container
+ * PURPOSE: The 3D perspective wrapper
+ * ============================================ */
+
+.diagram-wrapper {
+  perspective: 1200px; /* Essential for 3D effect */
+  padding: 40px 20px 100px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.diagram-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-style: preserve-3d;
+  transition: all 0.5s ease;
+}
+
+/* When ANY module is hovered, fade the rest */
+.diagram-container.is-hovering .module-card:not(.hovered) {
+  opacity: 0.3;
+  filter: grayscale(80%);
+}
+
+.diagram-container.is-hovering .connection-wrapper {
+  opacity: 0.3;
+}
+
+/* ============================================
+ * SECTION: Module Card (Node)
+ * PURPOSE: The 5 pipeline steps styling
+ * ============================================ */
+
+.module-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 800px;
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+  
+  /* ZOOM LEVEL 1: Default 3D tilt */
+  transform: rotateX(5deg) scale(0.98);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  cursor: pointer;
+  z-index: 2;
+}
+
+/* ZOOM LEVEL 2: Hover State */
+.module-card.hovered {
+  transform: rotateX(0deg) scale(1.02) translateZ(40px);
+  border-color: var(--active-theme);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 20px var(--active-theme-bg);
+  z-index: 10;
+}
+
+/* Theme assignments */
+.theme-blue { --active-theme: var(--theme-blue); --active-theme-bg: var(--theme-blue-bg); }
+.theme-green { --active-theme: var(--theme-green); --active-theme-bg: var(--theme-green-bg); }
+.theme-red { --active-theme: var(--theme-red); --active-theme-bg: var(--theme-red-bg); }
+.theme-purple { --active-theme: var(--theme-purple); --active-theme-bg: var(--theme-purple-bg); }
+
+/* Hints */
+.m-hint {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--active-theme);
+  color: #000;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.module-card:hover .m-hint-click { opacity: 1; top: -35px; }
+
+/* Header */
+.m-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.m-badge {
+  background: var(--active-theme-bg);
+  color: var(--active-theme);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 12px;
+}
+
+.m-title {
+  font-size: 18px;
+  font-weight: 600;
+  flex-grow: 1;
+}
+
+.btn-run {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+/* Body: Input -> Output */
+.m-body {
+  display: flex;
+  padding: 20px;
+  align-items: stretch;
+}
+
+.m-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.m-col-title {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.m-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 30px;
+  color: var(--text-secondary);
+  font-size: 20px;
+}
+
+.tag-input, .tag-output {
+  padding: 8px 12px;
+  background: #21262d;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  display: inline-block;
+  align-self: flex-start;
+  color: #c9d1d9;
+}
+
+.tag-output {
+  background: transparent;
+  border-color: var(--border-color);
+}
+
+.btn-field {
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* Footer: Why do this (Visible only on Hover) */
+.m-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(0,0,0,0.2);
+  display: none;
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
+
+.module-card.hovered .m-footer {
+  display: block;
+  animation: fadeInDown 0.3s ease forwards;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.m-why-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.m-why-text {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+/* ============================================
+ * SECTION: Connections (Arrows & Particles)
+ * PURPOSE: Connecting lines between modules
+ * ============================================ */
+
+.connection-wrapper {
+  height: 60px;
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  transition: opacity 0.5s;
+}
+
+.connection-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-color);
+}
+
+.connection-arrow {
+  position: absolute;
+  bottom: -5px;
+  color: var(--border-color);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.connection-label {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  z-index: 2;
+  font-family: var(--font-mono);
+}
+
+/* Particles moving down the line */
+.particle {
+  position: absolute;
+  top: 0;
+  left: -2px;
+  width: 5px;
+  height: 15px;
+  background: var(--theme-blue);
+  border-radius: 5px;
+  box-shadow: 0 0 10px var(--theme-blue);
+  animation: particleFall 2s infinite linear;
+}
+
+@keyframes particleFall {
+  0% { top: 0; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* ============================================
+ * SECTION: Flowchart (Module 2 specific)
+ * PURPOSE: Inner loop diagram for Scraper
+ * ============================================ */
+
+.mini-flowchart {
+  padding: 20px;
+  border-top: 1px dashed var(--border-color);
+  background: rgba(0,0,0,0.1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.flow-header {
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+}
+
+.flow-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.f-num {
+  color: var(--text-secondary);
+  width: 30px;
+}
+
+.f-box {
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.f-search { border-color: var(--theme-blue); background: var(--theme-blue-bg); }
+.f-dedup { border-color: #d2a8ff; background: rgba(210, 168, 255, 0.1); }
+.f-scoring { border-color: var(--border-color); }
+.f-success { border-color: var(--theme-green); color: var(--theme-green); }
+
+.f-diamond {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  transform: rotate(45deg);
+  text-align: center;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.f-diamond > * {
+  transform: rotate(-45deg);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.f-arr {
+  color: var(--text-secondary);
+  padding: 0 8px;
+}
+
+.f-arr-yes {
+  color: var(--theme-green);
+}
+
+.flow-no-arrow {
+  text-align: right;
+  padding-right: 180px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+
+.flow-legend {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+.l-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+.l-search { background: var(--theme-blue); }
+.l-dedup { background: #d2a8ff; }
+.l-scoring { background: var(--border-color); }
+
+/* ============================================
+ * SECTION: Detail Modal (ZOOM LEVEL 3)
+ * PURPOSE: Fullscreen detail view on click
+ * ============================================ */
+
+.detail-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 17, 23, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.detail-modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-dialog {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  
+  /* 3D Entrance */
+  transform: perspective(1200px) rotateX(-10deg) translateY(30px) scale(0.95);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.detail-modal.show .modal-dialog {
+  transform: perspective(1200px) rotateX(0) translateY(0) scale(1);
+}
+
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: var(--border-color);
+  color: white;
+}
+
+.modal-header {
+  padding: 30px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+  font-size: 24px;
+  margin-top: 12px;
+}
+
+.modal-body {
+  padding: 30px;
+}
+
+.detail-section {
+  margin-bottom: 30px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.why-text-large {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.example-box {
+  background: rgba(88, 166, 255, 0.05);
+  border-left: 3px solid var(--theme-blue);
+  padding: 16px 20px;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.glossary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 600px) {
+  .glossary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.glossary-item {
+  background: #21262d;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+}
+
+.glossary-item strong {
+  display: block;
+  color: var(--theme-purple);
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.glossary-item p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ============================================
+ * SECTION: Responsive
+ * PURPOSE: Mobile adaptations
+ * ============================================ */
+
+@media (max-width: 768px) {
+  .m-body {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .m-arrow {
+    transform: rotate(90deg);
+    padding: 10px 0;
+  }
+  
+  .flow-row {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .flow-no-arrow {
+    padding-right: 0;
+    text-align: center;
+  }
+  
+  .modal-dialog {
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+}

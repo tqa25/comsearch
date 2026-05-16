@@ -411,8 +411,10 @@ class DatabaseManager:
     ) -> None:
         conn = _get_connection()
         try:
-            existing = self.get_daily_quota(date_str)
-            if existing.get("id"):
+            existing = conn.execute(
+                "SELECT * FROM daily_quota WHERE date = ?", (date_str,)
+            ).fetchone()
+            if existing:
                 updates = {}
                 if gemini_grounding_used is not None:
                     updates["gemini_grounding_used"] = gemini_grounding_used

@@ -111,8 +111,9 @@ class GeminiQuickSearch:
 
     def _parse_json_response(self, text: str) -> dict:
         """Parse JSON from Gemini text response."""
-        # Try to extract JSON from markdown code blocks
         text = text.strip()
+
+        # Try to extract JSON from markdown code blocks
         if text.startswith("```"):
             lines = text.split("\n")
             # Remove first line (```json or ```)
@@ -122,15 +123,33 @@ class GeminiQuickSearch:
                 lines = lines[:-1]
             text = "\n".join(lines)
 
+        # Try direct parse
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            # Try to find JSON in text
-            start = text.find("{")
-            end = text.rfind("}") + 1
-            if start >= 0 and end > start:
-                return json.loads(text[start:end])
-            raise
+            pass
+
+        # Try to find JSON object in text (handle trailing text)
+        start = text.find("{")
+        if start >= 0:
+            # Count braces to find the matching closing brace
+            depth = 0
+            end = start
+            for i in range(start, len(text)):
+                if text[i] == "{":
+                    depth += 1
+                elif text[i] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        end = i + 1
+                        break
+            if depth == 0:
+                try:
+                    return json.loads(text[start:end])
+                except json.JSONDecodeError:
+                    pass
+
+        raise json.JSONDecodeError("No valid JSON found", text, 0)
 
     def search(self, company_id: int) -> dict:
         """Bước 2: AI Quick Search.
@@ -245,11 +264,13 @@ class GeminiQuickSearch:
                 raise RetryableError(
                     f"Gemini rate limited: {e}"
                 ) from e
-            if "402" in error_msg or "quota" in error_msg:
+            if "402" in error_msg:
                 raise CriticalError(
-                    f"Gemini quota exhausted: {e}"
+                    f"Gemini credits exhausted: {e}"
                 ) from e
 
+            # For all other errors, log and return empty result
+            # (don't stop the pipeline for Gemini errors)
             self.logger.error(
                 f"[{company_id}] Gemini Quick Search error: {e}"
             )

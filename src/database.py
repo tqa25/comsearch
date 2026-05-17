@@ -411,26 +411,27 @@ class DatabaseManager:
     ) -> None:
         conn = _get_connection()
         try:
-            existing = self.get_daily_quota(date_str)
-            if existing.get("id"):
+            # Simple upsert: try insert, if conflict then update
+            try:
+                conn.execute(
+                    """INSERT INTO daily_quota (date, gemini_grounding_used, serper_used)
+                       VALUES (?, ?, ?)""",
+                    (date_str, gemini_grounding_used or 0, serper_used or 0),
+                )
+            except conn.IntegrityError:
+                # Row exists, update it
                 updates = {}
                 if gemini_grounding_used is not None:
                     updates["gemini_grounding_used"] = gemini_grounding_used
                 if serper_used is not None:
                     updates["serper_used"] = serper_used
                 if updates:
-                    self._update_daily_quota(conn, date_str, updates)
-            else:
-                conn.execute(
-                    """INSERT INTO daily_quota (date, gemini_grounding_used, serper_used)
-                       VALUES (?, ?, ?)""",
-                    (
-                        date_str,
-                        gemini_grounding_used or 0,
-                        serper_used or 0,
-                    ),
-                )
-                conn.commit()
+                    set_clause = ", ".join(f"{k} = ?" for k in updates)
+                    values = tuple(updates.values()) + (date_str,)
+                    conn.execute(
+                        f"UPDATE daily_quota SET {set_clause} WHERE date = ?", values
+                    )
+            conn.commit()
         finally:
             conn.close()
 

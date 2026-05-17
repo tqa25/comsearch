@@ -102,35 +102,52 @@ class AIExtractor:
                 lines = lines[:-1]
             text = "\n".join(lines)
 
+        # Try direct parse
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            start = text.find("{")
-            end = text.rfind("}") + 1
-            if start >= 0 and end > start:
-                return json.loads(text[start:end])
-            raise
+            pass
 
-    def extract_from_page(self, page_id: int) -> Optional[Dict]:
+        # Find JSON object by counting braces
+        start = text.find("{")
+        if start >= 0:
+            depth = 0
+            end = start
+            for i in range(start, len(text)):
+                if text[i] == "{":
+                    depth += 1
+                elif text[i] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        end = i + 1
+                        break
+            if depth == 0:
+                try:
+                    return json.loads(text[start:end])
+                except json.JSONDecodeError:
+                    pass
+
+        raise json.JSONDecodeError("No valid JSON found", text, 0)
+
+    def extract_from_page(self, company_id: int, page_id: int) -> Optional[Dict]:
         """Extract contact info from a single scraped page.
 
         Args:
+            company_id: The company ID.
             page_id: The scraped page ID.
 
         Returns:
             Dict with extracted contact info, or None.
         """
-        pages = self.db.get_scraped_pages_for_company(0)  # placeholder
+        pages = self.db.get_scraped_pages_for_company(company_id)
         page = None
-        # Find the specific page
-        all_pages = self.db.get_scraped_pages_for_company(0)
-        for p in all_pages:
+        for p in pages:
             if p["id"] == page_id:
                 page = p
                 break
 
         if not page:
-            self.logger.warning(f"Page {page_id} not found")
+            self.logger.warning(f"Page {page_id} not found for company {company_id}")
             return None
 
         markdown = page.get("markdown_content", "")
@@ -183,8 +200,8 @@ class AIExtractor:
             error_msg = str(e).lower()
             if "429" in error_msg or "rate" in error_msg:
                 raise RetryableError(f"AI Extract rate limited: {e}") from e
-            if "402" in error_msg or "quota" in error_msg:
-                raise CriticalError(f"AI Extract quota exhausted: {e}") from e
+            if "402" in error_msg:
+                raise CriticalError(f"AI Extract credits exhausted: {e}") from e
 
             self.logger.error(f"AI Extract error for page {page_id}: {e}")
             return None
@@ -229,7 +246,7 @@ class AIExtractor:
                 continue
 
             try:
-                result = self.extract_from_page(page_id)
+                result = self.extract_from_page(company_id, page_id)
                 if result:
                     contact_id = self.db.insert_extracted_contact(
                         company_id=company_id,

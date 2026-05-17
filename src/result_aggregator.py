@@ -17,8 +17,11 @@ class ResultAggregator:
     def aggregate_all(self) -> List[Dict]:
         """Aggregate extracted_contacts for all companies.
 
+        Returns one row per contact (NOT per company), so multiple contacts
+        from different sources are all visible.
+
         Returns:
-            List of dicts with company info + best contact data.
+            List of dicts with company info + contact data (one row per contact).
         """
         companies = self.db.get_all_companies()
         results = []
@@ -27,28 +30,40 @@ class ResultAggregator:
             company_id = company["id"]
             contacts = self.db.get_extracted_contacts_for_company(company_id)
 
-            # Pick best contact (highest confidence)
-            best_contact = {}
             if contacts:
-                contacts.sort(
-                    key=lambda x: x.get("confidence_score", 0),
-                    reverse=True,
-                )
-                best_contact = contacts[0]
-
-            result = {
-                "original_name": company.get("original_name", ""),
-                "vietnamese_name": company.get("vietnamese_name", ""),
-                "tax_code": company.get("tax_code", ""),
-                "phone": best_contact.get("phone", ""),
-                "email": best_contact.get("email", ""),
-                "address": best_contact.get("address", "") or company.get("address", ""),
-                "website": best_contact.get("website", ""),
-                "source": best_contact.get("source_type", ""),
-                "confidence": best_contact.get("confidence_score", 0),
-                "status": company.get("status", ""),
-            }
-            results.append(result)
+                # One row per contact
+                for contact in contacts:
+                    result = {
+                        "original_name": company.get("original_name", ""),
+                        "vietnamese_name": company.get("vietnamese_name", ""),
+                        "tax_code": company.get("tax_code", ""),
+                        "phone": contact.get("phone", ""),
+                        "email": contact.get("email", ""),
+                        "address": contact.get("address", "")
+                        or company.get("address", ""),
+                        "website": contact.get("website", ""),
+                        "source": contact.get("source_type", ""),
+                        "source_url": contact.get("source_url", ""),
+                        "confidence": contact.get("confidence_score", 0),
+                        "status": company.get("status", ""),
+                    }
+                    results.append(result)
+            else:
+                # No contacts found — still show company
+                result = {
+                    "original_name": company.get("original_name", ""),
+                    "vietnamese_name": company.get("vietnamese_name", ""),
+                    "tax_code": company.get("tax_code", ""),
+                    "phone": "",
+                    "email": "",
+                    "address": company.get("address", ""),
+                    "website": "",
+                    "source": "",
+                    "source_url": "",
+                    "confidence": 0,
+                    "status": company.get("status", ""),
+                }
+                results.append(result)
 
         return results
 

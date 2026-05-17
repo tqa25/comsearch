@@ -110,18 +110,26 @@ class GeminiQuickSearch:
         return urls
 
     def _parse_json_response(self, text: str) -> dict:
-        """Parse JSON from Gemini text response."""
+        """Parse JSON from Gemini response text, handling markdown and trailing text.
+
+        Args:
+            text: Raw Gemini response text.
+
+        Returns:
+            Parsed dict from JSON.
+
+        Raises:
+            json.JSONDecodeError: If no valid JSON is found.
+        """
         text = text.strip()
 
-        # Try to extract JSON from markdown code blocks
+        # Strip markdown code blocks
         if text.startswith("```"):
             lines = text.split("\n")
-            # Remove first line (```json or ```)
             lines = lines[1:]
-            # Remove last line if it's ```
             if lines and lines[-1].strip() == "```":
                 lines = lines[:-1]
-            text = "\n".join(lines)
+            text = "\n".join(lines).strip()
 
         # Try direct parse
         try:
@@ -129,16 +137,29 @@ class GeminiQuickSearch:
         except json.JSONDecodeError:
             pass
 
-        # Try to find JSON object in text (handle trailing text)
+        # Find JSON object by counting braces (handle string escapes)
         start = text.find("{")
         if start >= 0:
-            # Count braces to find the matching closing brace
             depth = 0
             end = start
+            in_string = False
+            escape_next = False
             for i in range(start, len(text)):
-                if text[i] == "{":
+                ch = text[i]
+                if escape_next:
+                    escape_next = False
+                    continue
+                if ch == '\\':
+                    escape_next = True
+                    continue
+                if ch == '"':
+                    in_string = not in_string
+                    continue
+                if in_string:
+                    continue
+                if ch == "{":
                     depth += 1
-                elif text[i] == "}":
+                elif ch == "}":
                     depth -= 1
                     if depth == 0:
                         end = i + 1
@@ -198,7 +219,21 @@ class GeminiQuickSearch:
 
         try:
             # Gemma models don't support grounding tools, use plain generation
-            response = self.model.generate_content(prompt)
+            # Retry on 500/internal errors
+            response = None
+            for attempt in range(2):  # max 2 retries
+                try:
+                    response = self.model.generate_content(prompt)
+                    break  # Success
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if ("500" in error_msg or "internal" in error_msg) and attempt < 1:
+                        self.logger.warning(
+                            f"[{company_id}] Gemini 500 error, retry {attempt + 1}/2"
+                        )
+                        time.sleep(2)
+                        continue
+                    raise
 
             self._increment_gemini_quota()
 

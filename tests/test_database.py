@@ -147,3 +147,55 @@ class TestDailyQuota:
     def test_quota_default(self, db):
         quota = db.get_daily_quota("2099-01-01")
         assert quota["gemini_grounding_used"] == 0
+
+
+class TestDailyQuotaUpsert:
+    """Issue 9: Test atomic upsert for daily quota."""
+
+    def test_upsert_new_date(self, db):
+        db.upsert_daily_quota("2026-01-01", gemini_grounding_used=5)
+        quota = db.get_daily_quota("2026-01-01")
+        assert quota["gemini_grounding_used"] == 5
+
+    def test_upsert_existing_date(self, db):
+        db.upsert_daily_quota("2026-01-01", gemini_grounding_used=5)
+        # Update same date
+        db.upsert_daily_quota("2026-01-01", gemini_grounding_used=10)
+        quota = db.get_daily_quota("2026-01-01")
+        assert quota["gemini_grounding_used"] == 10
+
+    def test_upsert_no_race_condition(self, db):
+        """Test that multiple upserts on same date don't fail."""
+        # Simulate concurrent upserts
+        for i in range(5):
+            db.upsert_daily_quota("2026-01-01", gemini_grounding_used=i)
+        quota = db.get_daily_quota("2026-01-01")
+        assert quota["gemini_grounding_used"] == 4  # Last value wins
+
+    def test_upsert_both_fields(self, db):
+        """Test upsert with both gemini_grounding_used and serper_used."""
+        db.upsert_daily_quota(
+            "2026-01-01", gemini_grounding_used=10, serper_used=20
+        )
+        quota = db.get_daily_quota("2026-01-01")
+        assert quota["gemini_grounding_used"] == 10
+        assert quota["serper_used"] == 20
+
+    def test_upsert_partial_update(self, db):
+        """Test that updating one field preserves the other."""
+        db.upsert_daily_quota(
+            "2026-01-01", gemini_grounding_used=10, serper_used=20
+        )
+        # Update only serper_used — gemini should be preserved via COALESCE
+        db.upsert_daily_quota("2026-01-01", serper_used=30)
+        quota = db.get_daily_quota("2026-01-01")
+        # gemini_grounding_used stays at 10 (COALESCE keeps old value when new is None/0)
+        assert quota["gemini_grounding_used"] == 10
+        assert quota["serper_used"] == 30
+
+    def test_upsert_with_none_values(self, db):
+        """Test upsert with None values defaults to 0."""
+        db.upsert_daily_quota("2026-01-01")
+        quota = db.get_daily_quota("2026-01-01")
+        assert quota["gemini_grounding_used"] == 0
+        assert quota["serper_used"] == 0

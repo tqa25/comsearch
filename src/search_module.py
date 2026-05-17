@@ -8,7 +8,7 @@ import requests
 
 from src.config import default_config
 from src.database import DatabaseManager
-from src.errors import CriticalError, RetryableError
+from src.errors import CriticalError, RetryableError, SkippableError
 from src.filter_module import LinkFilter
 
 logger = logging.getLogger(__name__)
@@ -84,11 +84,18 @@ class SearchModule:
                 raise CriticalError(
                     "Serper credits exhausted. STOP immediately."
                 )
+            if response.status_code == 403:
+                self.logger.error(
+                    "Serper API 403: Invalid API key. "
+                    "Check SERPER_API_KEY in .env"
+                )
+                raise SkippableError("Serper API key invalid")
             if response.status_code == 429:
                 raise RetryableError("Serper rate limited")
             if response.status_code != 200:
                 self.logger.error(
-                    f"Serper API error {response.status_code}: {response.text}"
+                    f"Serper API error {response.status_code}: "
+                    f"{response.text[:200]}"
                 )
                 return []
 
@@ -102,7 +109,7 @@ class SearchModule:
                 })
             return results
 
-        except (CriticalError, RetryableError):
+        except (CriticalError, RetryableError, SkippableError):
             raise
         except requests.RequestException as e:
             self.logger.error(f"Serper network error: {e}")

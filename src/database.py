@@ -418,15 +418,40 @@ class DatabaseManager:
         """
         conn = _get_connection()
         try:
+            # Build dynamic query based on which fields are provided
+            updates = []
+            values = [date_str]
+            insert_fields = ["date"]
+            insert_values = ["?"]
+
+            if gemini_grounding_used is not None:
+                insert_fields.append("gemini_grounding_used")
+                insert_values.append("?")
+                values.append(gemini_grounding_used)
+                updates.append("gemini_grounding_used = excluded.gemini_grounding_used")
+
+            if serper_used is not None:
+                insert_fields.append("serper_used")
+                insert_values.append("?")
+                values.append(serper_used)
+                updates.append("serper_used = excluded.serper_used")
+
+            # If no fields provided, just ensure row exists
+            if not updates:
+                insert_fields.append("gemini_grounding_used")
+                insert_values.append("0")
+                insert_fields.append("serper_used")
+                insert_values.append("0")
+
+            fields_str = ", ".join(insert_fields)
+            values_str = ", ".join(insert_values)
+            updates_str = ", ".join(updates) if updates else "gemini_grounding_used = gemini_grounding_used"
+
             conn.execute(
-                """INSERT INTO daily_quota (date, gemini_grounding_used, serper_used)
-                   VALUES (?, ?, ?)
-                   ON CONFLICT(date) DO UPDATE SET
-                       gemini_grounding_used = COALESCE(
-                           excluded.gemini_grounding_used, gemini_grounding_used
-                       ),
-                       serper_used = COALESCE(excluded.serper_used, serper_used)""",
-                (date_str, gemini_grounding_used or 0, serper_used or 0),
+                f"""INSERT INTO daily_quota ({fields_str})
+                    VALUES ({values_str})
+                    ON CONFLICT(date) DO UPDATE SET {updates_str}""",
+                values,
             )
             conn.commit()
         finally:

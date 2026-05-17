@@ -86,8 +86,8 @@ class SearchModule:
                 )
             if response.status_code == 403:
                 self.logger.error(
-                    f"[{company_id}] Serper API 403: Invalid API key. "
-                    f"Check SERPER_API_KEY in .env"
+                    "Serper API 403: Invalid API key. "
+                    "Check SERPER_API_KEY in .env"
                 )
                 raise SkippableError("Serper API key invalid")
             if response.status_code == 429:

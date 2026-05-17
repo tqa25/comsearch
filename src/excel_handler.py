@@ -165,7 +165,8 @@ class ExcelWriter:
 
         detail_headers = [
             "STT", "Tên công ty (EN)", "Tên tiếng Việt", "Mã số thuế",
-            "Phone", "Email", "Địa chỉ", "Website", "Nguồn", "Độ tin cậy",
+            "Phone", "Email", "Địa chỉ", "Website", "Nguồn", "Source URL",
+            "Độ tin cậy",
         ]
         self._write_header(ws_detail, detail_headers)
 
@@ -179,7 +180,8 @@ class ExcelWriter:
             ws_detail.cell(row=idx, column=7, value=row_data.get("address", ""))
             ws_detail.cell(row=idx, column=8, value=row_data.get("website", ""))
             ws_detail.cell(row=idx, column=9, value=row_data.get("source", ""))
-            ws_detail.cell(row=idx, column=10, value=row_data.get("confidence", ""))
+            ws_detail.cell(row=idx, column=10, value=row_data.get("source_url", ""))
+            ws_detail.cell(row=idx, column=11, value=row_data.get("confidence", ""))
 
         self._auto_width(ws_detail)
         ws_detail.freeze_panes = "A2"

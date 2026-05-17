@@ -409,28 +409,25 @@ class DatabaseManager:
     def upsert_daily_quota(
         self, date_str: str, gemini_grounding_used: int = None, serper_used: int = None
     ) -> None:
+        """Upsert daily quota atomically — no race condition.
+
+        Args:
+            date_str: Date string in YYYY-MM-DD format.
+            gemini_grounding_used: Gemini grounding usage count.
+            serper_used: Serper usage count.
+        """
         conn = _get_connection()
         try:
-            # Simple upsert: try insert, if conflict then update
-            try:
-                conn.execute(
-                    """INSERT INTO daily_quota (date, gemini_grounding_used, serper_used)
-                       VALUES (?, ?, ?)""",
-                    (date_str, gemini_grounding_used or 0, serper_used or 0),
-                )
-            except conn.IntegrityError:
-                # Row exists, update it
-                updates = {}
-                if gemini_grounding_used is not None:
-                    updates["gemini_grounding_used"] = gemini_grounding_used
-                if serper_used is not None:
-                    updates["serper_used"] = serper_used
-                if updates:
-                    set_clause = ", ".join(f"{k} = ?" for k in updates)
-                    values = tuple(updates.values()) + (date_str,)
-                    conn.execute(
-                        f"UPDATE daily_quota SET {set_clause} WHERE date = ?", values
-                    )
+            conn.execute(
+                """INSERT INTO daily_quota (date, gemini_grounding_used, serper_used)
+                   VALUES (?, ?, ?)
+                   ON CONFLICT(date) DO UPDATE SET
+                       gemini_grounding_used = COALESCE(
+                           excluded.gemini_grounding_used, gemini_grounding_used
+                       ),
+                       serper_used = COALESCE(excluded.serper_used, serper_used)""",
+                (date_str, gemini_grounding_used or 0, serper_used or 0),
+            )
             conn.commit()
         finally:
             conn.close()
